@@ -1,0 +1,220 @@
+
+#include <stdio.h>
+
+#define MAX 100
+#define VOCUC 1000
+
+struct DOTHI {
+    int n;
+    int a[MAX][MAX];
+};
+
+int LuuVet[MAX];
+int ChuaXet[MAX];
+int DoDaiDuongDiToi[MAX];
+
+// Tim dinh chua xet co khoang cach nho nhat
+int TimDuongDiNhoNhat(DOTHI g) {
+    int li = -1;
+    int p = VOCUC;
+
+    for (int i = 0; i < g.n; i++) {
+        if (ChuaXet[i] == 0 &&
+            DoDaiDuongDiToi[i] < p) {
+            p = DoDaiDuongDiToi[i];
+            li = i;
+        }
+    }
+
+    return li;
+}
+
+// Cap nhat khoang cach va luu vet duong di
+void CapNhatDuongDi(int u, DOTHI g) {
+    ChuaXet[u] = 1;
+
+    for (int v = 0; v < g.n; v++) {
+        if (ChuaXet[v] == 0 &&
+            g.a[u][v] > 0 &&
+            g.a[u][v] < VOCUC) {
+
+            if (DoDaiDuongDiToi[u] < VOCUC &&
+                DoDaiDuongDiToi[v] >
+                DoDaiDuongDiToi[u] + g.a[u][v]) {
+
+                DoDaiDuongDiToi[v] =
+                    DoDaiDuongDiToi[u] + g.a[u][v];
+
+                LuuVet[v] = u;
+            }
+        }
+    }
+}
+
+// Thuat toan Dijkstra
+void Dijkstra(int S, int F, DOTHI g) {
+    for (int i = 0; i < g.n; i++) {
+        ChuaXet[i] = 0;
+        LuuVet[i] = -1;
+        DoDaiDuongDiToi[i] = VOCUC;
+    }
+
+    DoDaiDuongDiToi[S] = 0;
+
+    while (ChuaXet[F] == 0) {
+        int u = TimDuongDiNhoNhat(g);
+
+        if (u == -1)
+            break;
+
+        CapNhatDuongDi(u, g);
+    }
+
+    // Kiem tra co tim thay duong di hay khong
+    if (DoDaiDuongDiToi[F] < VOCUC) {
+        printf("\nDuong di ngan nhat tu [%d] den [%d] la:\n",
+               S, F);
+
+        // Truy vet tu F ve S
+        int duongDi[MAX];
+        int soDinh = 0;
+        int i = F;
+
+        while (i != -1 && soDinh < g.n) {
+            duongDi[soDinh++] = i;
+
+            if (i == S)
+                break;
+
+            i = LuuVet[i];
+        }
+
+        if (soDinh == 0 || duongDi[soDinh - 1] != S) {
+            printf("Khong the truy vet duong di!\n");
+            return;
+        }
+
+        // In duong di theo chieu S den F
+        for (int j = soDinh - 1; j >= 0; j--) {
+            printf("%d", duongDi[j]);
+
+            if (j > 0)
+                printf(" -> ");
+        }
+
+        printf("\nTong do dai la %d\n",
+               DoDaiDuongDiToi[F]);
+    }
+    else {
+        printf("\nKhong co duong di tu dinh %d den dinh %d\n",
+               S, F);
+    }
+}
+
+int main() {
+    DOTHI g;
+    int chon;
+
+    printf("===== CHUONG TRINH DIJKSTRA =====\n");
+    printf("1. Doc ma tran tu file TXT\n");
+    printf("2. Nhap ma tran bang tay\n");
+    printf("Chon cach nhap du lieu: ");
+
+    if (scanf("%d", &chon) != 1) {
+        printf("Lua chon khong hop le!\n");
+        return 1;
+    }
+
+    // Lua chon 1: Doc ma tran tu file TXT
+    if (chon == 1) {
+        char tenFile[256];
+
+        printf("Nhap ten file TXT: ");
+        if (scanf("%255s", tenFile) != 1) {
+            printf("Ten file khong hop le!\n");
+            return 1;
+        }
+
+        FILE *f = fopen(tenFile, "r");
+
+        if (f == NULL) {
+            printf("Khong mo duoc file %s!\n", tenFile);
+            return 1;
+        }
+
+        if (fscanf(f, "%d", &g.n) != 1 ||
+            g.n <= 0 || g.n > MAX) {
+            printf("So dinh trong file khong hop le!\n");
+            fclose(f);
+            return 1;
+        }
+
+        // Doc ma tran trong so
+        for (int i = 0; i < g.n; i++) {
+            for (int j = 0; j < g.n; j++) {
+                if (fscanf(f, "%d", &g.a[i][j]) != 1) {
+                    printf("Ma tran trong file khong hop le!\n");
+                    fclose(f);
+                    return 1;
+                }
+            }
+        }
+
+        fclose(f);
+        printf("Doc file thanh cong!\n");
+    }
+
+    // Lua chon 2: Nhap ma tran bang tay
+    else if (chon == 2) {
+        printf("Nhap so dinh: ");
+
+        if (scanf("%d", &g.n) != 1 ||
+            g.n <= 0 || g.n > MAX) {
+            printf("So dinh khong hop le!\n");
+            return 1;
+        }
+
+        printf("Nhap ma tran trong so (%d x %d):\n",
+               g.n, g.n);
+
+        for (int i = 0; i < g.n; i++) {
+            for (int j = 0; j < g.n; j++) {
+                if (scanf("%d", &g.a[i][j]) != 1) {
+                    printf("Ma tran khong hop le!\n");
+                    return 1;
+                }
+            }
+        }
+    }
+
+    else {
+        printf("Lua chon khong hop le!\n");
+        return 1;
+    }
+
+    // Nhap dinh bat dau S va dinh ket thuc F
+    int S, F;
+
+    printf("Nhap dinh bat dau S (0 den %d): ", g.n - 1);
+    if (scanf("%d", &S) != 1) {
+        printf("Dinh S khong hop le!\n");
+        return 1;
+    }
+
+    printf("Nhap dinh ket thuc F (0 den %d): ", g.n - 1);
+    if (scanf("%d", &F) != 1) {
+        printf("Dinh F khong hop le!\n");
+        return 1;
+    }
+
+    if (S < 0 || S >= g.n ||
+        F < 0 || F >= g.n) {
+        printf("Dinh S hoac F khong hop le!\n");
+        return 1;
+    }
+
+    // Chay Dijkstra
+    Dijkstra(S, F, g);
+
+    return 0;
+}
